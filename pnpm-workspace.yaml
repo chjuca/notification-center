@@ -2,5 +2,6 @@ packages:
   - apps/*
 
 ignoredBuiltDependencies:
+  - argon2
   - sharp
   - unrs-resolver
