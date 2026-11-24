@@ -10,6 +10,16 @@ export const createNotificationSchema = z.object({
 
 export type CreateNotificationDto = z.infer<typeof createNotificationSchema>;
 
+export const updateNotificationSchema = createNotificationSchema
+  .partial()
+  .refine((dto) => Object.keys(dto).length > 0, {
+    message: 'At least one field is required',
+  });
+
+export type UpdateNotificationDto = z.infer<typeof updateNotificationSchema>;
+
+export const notificationIdSchema = z.uuid();
+
 export const listNotificationsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

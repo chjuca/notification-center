@@ -153,4 +153,113 @@ describe('Notifications (e2e)', () => {
       await request(app.getHttpServer()).get('/notifications').expect(401);
     });
   });
+
+  describe('PATCH /notifications/:id', () => {
+    const patch = (token: string, id: string, body: object) =>
+      request(app.getHttpServer())
+        .patch(`/notifications/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(body);
+
+    it('changes only the fields that were sent', async () => {
+      const created = await createNotification(anaToken, {
+        title: 'Before',
+      }).expect(201);
+
+      const response = await patch(anaToken, created.body.id, {
+        title: 'After',
+      }).expect(200);
+
+      expect(response.body).toMatchObject({
+        id: created.body.id,
+        title: 'After',
+        content: created.body.content,
+        channel: created.body.channel,
+        recipient: created.body.recipient,
+        createdAt: created.body.createdAt,
+      });
+      expect(response.body.updatedAt).not.toBe(created.body.updatedAt);
+    });
+
+    it('answers 404 for a notification of another user and leaves it intact', async () => {
+      const created = await createNotification(anaToken, {
+        title: 'Owned by Ana',
+      }).expect(201);
+
+      await patch(benToken, created.body.id, { title: 'Hijacked' }).expect(404);
+
+      const anaList = await listNotifications(anaToken).expect(200);
+      const titles = anaList.body.items.map(
+        (item: { title: string }) => item.title,
+      );
+      expect(titles).toContain('Owned by Ana');
+      expect(titles).not.toContain('Hijacked');
+    });
+
+    it('answers 404 for an id that does not exist', async () => {
+      await patch(anaToken, '7b0f4c1e-3d55-4a51-9a51-1f0c3f1e2a10', {
+        title: 'Nope',
+      }).expect(404);
+    });
+
+    it('rejects an id that is not a uuid and an empty body', async () => {
+      const created = await createNotification(anaToken).expect(201);
+
+      await patch(anaToken, 'not-a-uuid', { title: 'Nope' }).expect(400);
+      await patch(anaToken, created.body.id, {}).expect(400);
+    });
+
+    it('requires a token', async () => {
+      await request(app.getHttpServer())
+        .patch('/notifications/7b0f4c1e-3d55-4a51-9a51-1f0c3f1e2a10')
+        .send({ title: 'Nope' })
+        .expect(401);
+    });
+  });
+
+  describe('DELETE /notifications/:id', () => {
+    const remove = (token: string, id: string) =>
+      request(app.getHttpServer())
+        .delete(`/notifications/${id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+    const idsOf = async (token: string) => {
+      const list = await listNotifications(token, '?limit=100').expect(200);
+      return list.body.items.map((item: { id: string }) => item.id);
+    };
+
+    it('deletes a notification of the caller', async () => {
+      const created = await createNotification(anaToken).expect(201);
+
+      const response = await remove(anaToken, created.body.id).expect(204);
+
+      expect(response.body).toEqual({});
+      expect(await idsOf(anaToken)).not.toContain(created.body.id);
+    });
+
+    it('answers 404 for a notification of another user and keeps it', async () => {
+      const created = await createNotification(anaToken).expect(201);
+
+      await remove(benToken, created.body.id).expect(404);
+
+      expect(await idsOf(anaToken)).toContain(created.body.id);
+    });
+
+    it('answers 404 the second time', async () => {
+      const created = await createNotification(anaToken).expect(201);
+      await remove(anaToken, created.body.id).expect(204);
+
+      await remove(anaToken, created.body.id).expect(404);
+    });
+
+    it('rejects an id that is not a uuid', async () => {
+      await remove(anaToken, 'not-a-uuid').expect(400);
+    });
+
+    it('requires a token', async () => {
+      await request(app.getHttpServer())
+        .delete('/notifications/7b0f4c1e-3d55-4a51-9a51-1f0c3f1e2a10')
+        .expect(401);
+    });
+  });
 });

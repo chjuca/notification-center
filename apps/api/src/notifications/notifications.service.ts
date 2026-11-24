@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from './notification.entity.js';
 import type {
   CreateNotificationDto,
   ListNotificationsQuery,
+  UpdateNotificationDto,
 } from './notifications.dto.js';
 
 @Injectable()
@@ -33,5 +34,29 @@ export class NotificationsService {
       take: limit,
     });
     return { items, total };
+  }
+
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateNotificationDto,
+  ): Promise<Notification> {
+    const notification = await this.notificationsRepository.findOneBy({
+      id,
+      userId,
+    });
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    Object.assign(notification, dto);
+    return this.notificationsRepository.save(notification);
+  }
+
+  async remove(userId: string, id: string): Promise<void> {
+    const result = await this.notificationsRepository.delete({ id, userId });
+    if (!result.affected) {
+      throw new NotFoundException('Notification not found');
+    }
   }
 }
