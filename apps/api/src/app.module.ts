@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.js';
 import { envSchema, type Env } from './config/env.js';
 import { buildDataSourceOptions } from './database/typeorm.config.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -17,6 +18,7 @@ import { UsersModule } from './users/users.module.js';
     }),
     UsersModule,
     AuthModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_PIPE, useValue: new StandardSchemaValidationPipe() },
