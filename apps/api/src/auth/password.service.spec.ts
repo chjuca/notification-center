@@ -18,4 +18,11 @@ describe('PasswordService', () => {
 
     expect(first).not.toBe(second);
   });
+
+  it('verifies the right password and rejects a wrong one', async () => {
+    const hash = await service.hash('plain-password');
+
+    expect(await service.verify(hash, 'plain-password')).toBe(true);
+    expect(await service.verify(hash, 'other-password')).toBe(false);
+  });
 });

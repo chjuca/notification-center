@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
@@ -78,6 +79,56 @@ describe('Auth (e2e)', () => {
         .expect(400);
 
       expect(response.body.message).toHaveLength(2);
+    });
+  });
+
+  describe('POST /auth/login', () => {
+    const password = 'correct-horse';
+    let email: string;
+    let userId: string;
+
+    beforeAll(async () => {
+      email = uniqueEmail();
+      const response = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email, password })
+        .expect(201);
+      userId = response.body.id;
+    });
+
+    it('returns a signed token for the right credentials', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(200);
+
+      expect(response.body).toEqual({
+        accessToken: expect.any(String),
+        tokenType: 'Bearer',
+        expiresIn: expect.any(Number),
+      });
+
+      const payload = await app
+        .get(JwtService)
+        .verifyAsync<{ sub: string; exp: number; iat: number }>(
+          response.body.accessToken,
+        );
+      expect(payload.sub).toBe(userId);
+      expect(payload.exp - payload.iat).toBe(response.body.expiresIn);
+    });
+
+    it('answers the same 401 for a wrong password and an unknown email', async () => {
+      const wrongPassword = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password: 'wrong-password' })
+        .expect(401);
+
+      const unknownEmail = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: uniqueEmail(), password })
+        .expect(401);
+
+      expect(wrongPassword.body).toEqual(unknownEmail.body);
     });
   });
 });
