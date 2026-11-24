@@ -8,7 +8,9 @@ import {
   type RegisteredUser,
 } from './auth.dto.js';
 import { AuthService } from './auth.service.js';
+import { Public } from './public.decorator.js';
 
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
