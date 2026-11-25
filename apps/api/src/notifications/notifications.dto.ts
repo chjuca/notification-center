@@ -1,15 +1,33 @@
 import { z } from 'zod';
-import type {
-  DeliveryStatus,
-  NotificationDelivery,
+import {
+  DELIVERY_STATUSES,
+  type NotificationDelivery,
 } from './notification-delivery.entity.js';
 import type { Notification } from './notification.entity.js';
 
 export const createNotificationSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  content: z.string().trim().min(1).max(10_000),
-  channel: z.string().trim().min(1).max(32),
-  recipient: z.string().trim().min(1).max(512),
+  title: z.string().trim().min(1).max(200).meta({ example: 'Welcome' }),
+  content: z
+    .string()
+    .trim()
+    .min(1)
+    .max(10_000)
+    .meta({ example: 'Thanks for signing up.' }),
+  channel: z.string().trim().min(1).max(32).meta({
+    description: 'Name of a registered channel, such as email, sms or push',
+    example: 'email',
+  }),
+  recipient: z
+    .string()
+    .trim()
+    .min(1)
+    .max(512)
+    .meta({
+      description:
+        'Destination, in the format of the channel: an email address, ' +
+        'a phone number like +56912345678, or a device token',
+      example: 'ana@example.com',
+    }),
 });
 
 export type CreateNotificationDto = z.infer<typeof createNotificationSchema>;
@@ -33,33 +51,46 @@ export type ListNotificationsQuery = z.infer<
   typeof listNotificationsQuerySchema
 >;
 
-export interface DeliveryResponse {
-  id: string;
-  channel: string;
-  recipient: string;
-  status: DeliveryStatus;
-  details: Record<string, unknown>;
-  error: string | null;
-  createdAt: Date;
-}
+export const deliveryResponseSchema = z.object({
+  id: z.uuid(),
+  channel: z.string().meta({ example: 'email' }),
+  recipient: z.string().meta({ example: 'ana@example.com' }),
+  status: z.enum(DELIVERY_STATUSES),
+  details: z.record(z.string(), z.unknown()).meta({
+    description: 'What the channel sent. Its shape depends on the channel',
+  }),
+  error: z
+    .string()
+    .nullable()
+    .meta({ description: 'Why the delivery failed, when it did' }),
+  createdAt: z.iso.datetime(),
+});
 
-export interface NotificationResponse {
-  id: string;
-  title: string;
-  content: string;
-  channel: string;
-  recipient: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deliveries: DeliveryResponse[];
-}
+export type DeliveryResponse = z.infer<typeof deliveryResponseSchema>;
 
-export interface PaginatedNotifications {
-  items: NotificationResponse[];
-  total: number;
-  page: number;
-  limit: number;
-}
+export const notificationResponseSchema = z.object({
+  id: z.uuid(),
+  title: z.string().meta({ example: 'Welcome' }),
+  content: z.string().meta({ example: 'Thanks for signing up.' }),
+  channel: z.string().meta({ example: 'email' }),
+  recipient: z.string().meta({ example: 'ana@example.com' }),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  deliveries: z.array(deliveryResponseSchema),
+});
+
+export type NotificationResponse = z.infer<typeof notificationResponseSchema>;
+
+export const paginatedNotificationsSchema = z.object({
+  items: z.array(notificationResponseSchema),
+  total: z.number().int().meta({ example: 1 }),
+  page: z.number().int().meta({ example: 1 }),
+  limit: z.number().int().meta({ example: 20 }),
+});
+
+export type PaginatedNotifications = z.infer<
+  typeof paginatedNotificationsSchema
+>;
 
 function toDeliveryResponse(delivery: NotificationDelivery): DeliveryResponse {
   return {
@@ -69,7 +100,7 @@ function toDeliveryResponse(delivery: NotificationDelivery): DeliveryResponse {
     status: delivery.status,
     details: delivery.details,
     error: delivery.error,
-    createdAt: delivery.createdAt,
+    createdAt: delivery.createdAt.toISOString(),
   };
 }
 
@@ -82,8 +113,8 @@ export function toNotificationResponse(
     content: notification.content,
     channel: notification.channel,
     recipient: notification.recipient,
-    createdAt: notification.createdAt,
-    updatedAt: notification.updatedAt,
+    createdAt: notification.createdAt.toISOString(),
+    updatedAt: notification.updatedAt.toISOString(),
     deliveries: notification.deliveries.map(toDeliveryResponse),
   };
 }
