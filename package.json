@@ -3,8 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "up": "docker compose up --build",
-    "down": "docker compose down",
+    "start": "docker compose up --build",
+    "stop": "docker compose down",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter api migration:run",
@@ -12,6 +12,9 @@
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "test": "pnpm --filter api test"
+    "test": "pnpm db:up && pnpm test:unit && pnpm test:api && pnpm test:web",
+    "test:unit": "pnpm --filter api test",
+    "test:api": "pnpm --filter api test:e2e",
+    "test:web": "pnpm --filter web test:e2e"
   }
 }
