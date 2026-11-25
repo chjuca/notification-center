@@ -16,8 +16,10 @@ import { UsersModule } from './users/users.module.js';
     ThrottlerModule.forRoot({ throttlers: [DEFAULT_THROTTLE] }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) =>
-        buildDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
+      useFactory: (config: ConfigService<Env, true>) => ({
+        ...buildDataSourceOptions(config.get('DATABASE_URL', { infer: true })),
+        migrationsRun: true,
+      }),
     }),
     UsersModule,
     AuthModule,

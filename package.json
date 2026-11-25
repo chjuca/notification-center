@@ -3,7 +3,9 @@
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "db:up": "docker compose up -d --wait",
+    "up": "docker compose up --build",
+    "down": "docker compose down",
+    "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter api migration:run",
     "dev:api": "pnpm --filter api start:dev",

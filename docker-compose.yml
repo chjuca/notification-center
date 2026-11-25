@@ -16,5 +16,31 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://notifications:notifications@postgres:5432/notification_center
+      JWT_SECRET: ${JWT_SECRET:-local-only-secret-replace-it-outside-your-machine}
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+
 volumes:
   postgres-data:
