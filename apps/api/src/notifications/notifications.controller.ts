@@ -40,6 +40,7 @@ import { NotificationsService } from './notifications.service.js';
 @ApiTags('notifications')
 @ApiBearerAuth()
 @ApiErrorResponse(401, 'Missing, invalid or expired access token')
+@ApiErrorResponse(429, 'Too many requests. Try again in a minute')
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

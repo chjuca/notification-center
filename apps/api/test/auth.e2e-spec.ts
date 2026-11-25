@@ -5,6 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource, Like } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
+import { withoutThrottling } from './support/without-throttling.js';
 import { User } from '../src/users/user.entity.js';
 
 const EMAIL_PREFIX = 'e2e-auth-';
@@ -17,9 +18,11 @@ describe('Auth (e2e)', () => {
     `${EMAIL_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    const moduleRef = await withoutThrottling(
+      Test.createTestingModule({
+        imports: [AppModule],
+      }),
+    ).compile();
     app = moduleRef.createNestApplication();
     await app.init();
     dataSource = app.get(DataSource);

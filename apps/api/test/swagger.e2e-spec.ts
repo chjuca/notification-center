@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
+import { withoutThrottling } from './support/without-throttling.js';
 import {
   createOpenApiDocument,
   setupSwagger,
@@ -15,9 +16,11 @@ describe('Swagger (e2e)', () => {
   let document: OpenAPIObject;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    const moduleRef = await withoutThrottling(
+      Test.createTestingModule({
+        imports: [AppModule],
+      }),
+    ).compile();
     app = moduleRef.createNestApplication();
     setupSwagger(app);
     await app.init();
@@ -103,7 +106,7 @@ describe('Swagger (e2e)', () => {
       }
     >;
 
-    expect(Object.keys(responses).sort()).toEqual(['201', '400', '401']);
+    expect(Object.keys(responses).sort()).toEqual(['201', '400', '401', '429']);
     expect(
       responses['201'].content?.['application/json'].schema.properties,
     ).toHaveProperty('deliveries');

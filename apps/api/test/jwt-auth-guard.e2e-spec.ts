@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
+import { withoutThrottling } from './support/without-throttling.js';
 import type { AuthenticatedUser } from '../src/auth/authenticated-user.js';
 import { CurrentUser } from '../src/auth/current-user.decorator.js';
 import { Public } from '../src/auth/public.decorator.js';
@@ -29,10 +30,12 @@ describe('JwtAuthGuard (e2e)', () => {
   let jwtService: JwtService;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-      controllers: [ProbeController],
-    }).compile();
+    const moduleRef = await withoutThrottling(
+      Test.createTestingModule({
+        imports: [AppModule],
+        controllers: [ProbeController],
+      }),
+    ).compile();
     app = moduleRef.createNestApplication();
     await app.init();
     jwtService = app.get(JwtService);

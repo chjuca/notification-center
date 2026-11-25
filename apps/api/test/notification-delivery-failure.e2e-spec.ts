@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource, Like } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
+import { withoutThrottling } from './support/without-throttling.js';
 import { EmailChannel } from '../src/notifications/channels/email.channel.js';
 import type { NotificationChannel } from '../src/notifications/channels/notification-channel.js';
 import { User } from '../src/users/user.entity.js';
@@ -22,9 +23,11 @@ describe('Delivery failure (e2e)', () => {
   let token: string;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    })
+    const moduleRef = await withoutThrottling(
+      Test.createTestingModule({
+        imports: [AppModule],
+      }),
+    )
       .overrideProvider(EmailChannel)
       .useValue(brokenEmailChannel)
       .compile();
