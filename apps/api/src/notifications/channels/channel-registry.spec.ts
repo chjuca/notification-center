@@ -48,5 +48,6 @@ describe('ChannelRegistry', () => {
     const registry = moduleRef.get(ChannelRegistry);
 
     expect(registry.find('email')).toBeInstanceOf(EmailChannel);
+    expect(registry.names()).toEqual(['email', 'sms', 'push']);
   });
 });

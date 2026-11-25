@@ -5,8 +5,10 @@ import {
   NOTIFICATION_CHANNELS,
   type NotificationChannel,
 } from './notification-channel.js';
+import { PushChannel } from './push.channel.js';
+import { SmsChannel } from './sms.channel.js';
 
-const CHANNELS = [EmailChannel];
+const CHANNELS = [EmailChannel, SmsChannel, PushChannel];
 
 @Module({
   providers: [
