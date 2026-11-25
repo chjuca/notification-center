@@ -203,6 +203,7 @@ Los valores de ejemplo están en `apps/api/.env.example` y `apps/web/.env.exampl
 | `PORT` | API | Puerto | `3001` |
 | `CORS_ORIGINS` | API | Orígenes permitidos, separados por coma | `http://localhost:3000` |
 | `TRUST_PROXY_HOPS` | API | Proxies delante de la API, para obtener la IP real | `0` |
+| `SWAGGER_ASSETS` | API | De dónde carga Swagger su interfaz: `bundled` (de la propia API) o `cdn` | `bundled` |
 | `NEXT_PUBLIC_API_URL` | Web | URL de la API. Se fija al compilar | `http://localhost:3001` |
 
 Con Docker Compose no hace falta ningún `.env`: los valores locales están en `docker-compose.yml`. El `JWT_SECRET` de ese archivo sirve solo para una máquina local.

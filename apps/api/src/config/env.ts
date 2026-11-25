@@ -20,6 +20,7 @@ export const envSchema = z.object({
   JWT_EXPIRES_IN_SECONDS: z.coerce.number().int().positive().default(3600),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CORS_ORIGINS: originListSchema.default(['http://localhost:3000']),
+  SWAGGER_ASSETS: z.enum(['bundled', 'cdn']).default('bundled'),
 });
 
 export type Env = z.infer<typeof envSchema>;

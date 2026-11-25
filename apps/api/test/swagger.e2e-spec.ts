@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { INestApplication } from '@nestjs/common';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { Test } from '@nestjs/testing';
@@ -5,10 +6,13 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { withoutThrottling } from './support/without-throttling.js';
+import { scriptSources } from '../src/configure-app.js';
 import {
   createOpenApiDocument,
   setupSwagger,
+  SWAGGER_CDN_ORIGIN,
   SWAGGER_PATH,
+  SWAGGER_UI_VERSION,
 } from '../src/swagger.js';
 
 describe('Swagger (e2e)', () => {
@@ -39,6 +43,38 @@ describe('Swagger (e2e)', () => {
       .expect(200);
 
     expect(response.body.info.title).toBe('Notification Center API');
+  });
+
+  it('can load its interface from a cdn, pinned to the installed version', async () => {
+    const moduleRef = await withoutThrottling(
+      Test.createTestingModule({ imports: [AppModule] }),
+    ).compile();
+    const cdnApp = moduleRef.createNestApplication<INestApplication<App>>();
+    setupSwagger(cdnApp, 'cdn');
+    await cdnApp.init();
+
+    const response = await request(cdnApp.getHttpServer())
+      .get(`/${SWAGGER_PATH}`)
+      .expect(200);
+    await cdnApp.close();
+
+    const cdn = `${SWAGGER_CDN_ORIGIN}/npm/swagger-ui-dist@${SWAGGER_UI_VERSION}`;
+    expect(response.text).toContain(`${cdn}/swagger-ui.css`);
+    expect(response.text).toContain(`${cdn}/swagger-ui-bundle.js`);
+    expect(response.text).toContain(`${cdn}/swagger-ui-standalone-preset.js`);
+
+    const swaggerRequire = createRequire(
+      createRequire(import.meta.url).resolve('@nestjs/swagger/package.json'),
+    );
+    const installed = swaggerRequire('swagger-ui-dist/package.json') as {
+      version: string;
+    };
+    expect(SWAGGER_UI_VERSION).toBe(installed.version);
+  });
+
+  it('allows scripts from the cdn only when the interface comes from it', () => {
+    expect(scriptSources('bundled')).toEqual(["'self'"]);
+    expect(scriptSources('cdn')).toEqual(["'self'", SWAGGER_CDN_ORIGIN]);
   });
 
   it('describes every endpoint', () => {
