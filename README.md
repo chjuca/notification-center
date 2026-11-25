@@ -4,6 +4,15 @@ Sistema de gestión de notificaciones para usuarios autenticados. Cada usuario c
 
 Los envíos son simulados, como pide el enunciado: cada canal valida, transforma y registra lo que enviaría, sin llamar a un proveedor real.
 
+## Demo
+
+| Qué | Dónde |
+| --- | --- |
+| Frontend | https://notification-center-y1qj.vercel.app |
+| Swagger | https://notification-center-api.vercel.app/docs |
+
+La primera petición tras un rato sin uso puede tardar unos segundos, mientras despiertan la función y la base de datos.
+
 ## Funcionalidades
 
 - Registro con email y contraseña, y login que devuelve un token de acceso (JWT).
@@ -153,7 +162,7 @@ Con eso el canal ya se valida, se envía, queda registrado, aparece en `GET /cha
 
 **Seguridad**
 
-- **Límite de peticiones:** 5 por minuto en registro y login, 100 por minuto en el resto, por IP. Es un guard propio con un contador en memoria.
+- **Límite de peticiones:** 5 por minuto en registro y login, 100 por minuto en el resto, por IP. Es un guard propio con un contador en memoria: el paquete oficial de NestJS para esto todavía se publica en CommonJS y no carga en entornos que no admiten mezclarlo con los módulos ESM de NestJS 12.
 - **Cabeceras de seguridad** en todas las respuestas, y **CORS** restringido a los orígenes configurados.
 - **Dependencias sin telemetría:** se quitó la que traía el generador de NestJS.
 
@@ -191,6 +200,25 @@ pnpm dev:web    # frontend en http://localhost:3000, con recarga
 
 Una migración nueva se suma a la lista de `apps/api/src/database/migrations/index.ts`.
 
+## Despliegue
+
+Todo corre en planes gratuitos: la API y el frontend en Vercel, y la base de datos en Neon, conectada desde el Marketplace de Vercel.
+
+Son dos proyectos de Vercel sobre este mismo repositorio:
+
+| Proyecto | Root Directory | Framework Preset | Variables |
+| --- | --- | --- | --- |
+| API | `apps/api` | NestJS | `JWT_SECRET`, `CORS_ORIGINS` con la URL del frontend, `TRUST_PROXY_HOPS=1`, `SWAGGER_ASSETS=cdn`. `DATABASE_URL` la carga la integración de Neon |
+| Frontend | `apps/web` | Next.js | `NEXT_PUBLIC_API_URL` con la URL de la API |
+
+Tres cosas a tener en cuenta:
+
+- **El preset de la API se elige a mano.** Vercel detecta Vite, que NestJS 12 usa para los tests, y publica el código compilado como un sitio estático.
+- **`SWAGGER_ASSETS=cdn`.** Vercel no incluye en la función los archivos de la interfaz de Swagger, así que se cargan desde jsDelivr, con la versión fijada a la instalada.
+- **`TRUST_PROXY_HOPS=1`.** La API recibe las peticiones a través del proxy de Vercel. Con ese valor, el límite de peticiones cuenta por visitante y no por proxy.
+
+Las migraciones se aplican al arrancar, así que no hay un paso aparte.
+
 ## Variables de entorno
 
 Los valores de ejemplo están en `apps/api/.env.example` y `apps/web/.env.example`.
@@ -213,7 +241,7 @@ Con Docker Compose no hace falta ningún `.env`: los valores locales están en `
 - **Envío asíncrono con una cola.** En producción, la API publicaría un mensaje en una cola (por ejemplo Amazon SQS) y un proceso aparte haría el envío, con reintentos y una cola de mensajes fallidos. Los canales no cambiarían.
 - **Proveedores reales.** Conectar un canal a un proveedor es reemplazar el cuerpo de su método `send`.
 - **Verificar que el destinatario pertenece al usuario.** Hoy un usuario autenticado puede indicar cualquier destino. Con envíos reales habría que confirmar el email o el teléfono, para que la API no sirva de medio de spam.
-- **El límite de peticiones vive en memoria y es por IP.** Sirve con una sola instancia. Con varias haría falta un almacén compartido, como Redis, y convendría limitar además por cuenta.
+- **El límite de peticiones vive en memoria y es por IP.** Sirve con una sola instancia. En Vercel las funciones se crean y se destruyen según el tráfico, cada una con su propio contador, así que ahí el límite es aproximado. Para que sea exacto haría falta un almacén compartido, como Redis, y convendría limitar además por cuenta.
 - **El registro revela si un email ya existe,** al responder `409`. Ocultarlo requiere un flujo con confirmación por correo.
 - **Sin token de refresco.** La sesión dura una hora y luego hay que volver a entrar.
 - **El frontend guarda el token en `localStorage`.** Una cookie `httpOnly` lo protegería mejor ante una inyección de scripts, a cambio de manejar cookies y CSRF en la API.
