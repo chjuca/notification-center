@@ -59,6 +59,7 @@ Los tests usan su propia base, `notification_center_test`, que se crea sola. La 
 | --- | --- | --- |
 | `POST /auth/register` | Crea una cuenta | No |
 | `POST /auth/login` | Devuelve el token de acceso | No |
+| `GET /health` | Indica si la API y su base responden | No |
 | `GET /channels` | Lista los canales disponibles | Sí |
 | `POST /notifications` | Crea una notificación y la envía | Sí |
 | `GET /notifications` | Lista las propias, paginadas | Sí |

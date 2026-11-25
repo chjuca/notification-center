@@ -50,6 +50,7 @@ describe('Swagger (e2e)', () => {
     expect(operations.sort()).toEqual([
       'DELETE /notifications/{id}',
       'GET /channels',
+      'GET /health',
       'GET /notifications',
       'PATCH /notifications/{id}',
       'POST /auth/login',

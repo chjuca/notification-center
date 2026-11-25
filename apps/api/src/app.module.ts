@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { envSchema, type Env } from './config/env.js';
 import { DEFAULT_THROTTLE } from './common/throttle.js';
 import { buildDataSourceOptions } from './database/typeorm.config.js';
+import { HealthModule } from './health/health.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module.js';
     UsersModule,
     AuthModule,
     NotificationsModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_PIPE, useValue: new StandardSchemaValidationPipe() },
