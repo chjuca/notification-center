@@ -5,10 +5,13 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  type Relation,
 } from 'typeorm';
 import { User } from '../users/user.entity.js';
+import { NotificationDelivery } from './notification-delivery.entity.js';
 
 @Entity({ name: 'notifications' })
 @Index('idx_notifications_user_id_created_at', ['userId', 'createdAt'])
@@ -40,4 +43,7 @@ export class Notification {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @OneToMany(() => NotificationDelivery, (delivery) => delivery.notification)
+  deliveries: Relation<NotificationDelivery[]>;
 }

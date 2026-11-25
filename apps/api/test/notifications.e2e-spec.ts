@@ -84,6 +84,20 @@ describe('Notifications (e2e)', () => {
         recipient: 'someone@example.com',
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
+        deliveries: [
+          {
+            id: expect.any(String),
+            channel: 'email',
+            recipient: 'someone@example.com',
+            status: 'sent',
+            details: {
+              subject: 'First',
+              html: expect.stringContaining('<h1>First</h1>'),
+            },
+            error: null,
+            createdAt: expect.any(String),
+          },
+        ],
       });
     });
 
@@ -116,6 +130,95 @@ describe('Notifications (e2e)', () => {
     });
   });
 
+  describe('POST /notifications: sending through each channel', () => {
+    let carlaToken: string;
+
+    beforeAll(async () => {
+      carlaToken = (await registerAndLogin()).token;
+    });
+
+    const totalOf = async (token: string) =>
+      (await listNotifications(token).expect(200)).body.total as number;
+
+    it('cuts an sms to 160 characters and records what was sent', async () => {
+      const response = await createNotification(carlaToken, {
+        title: 'Code',
+        content: 'x'.repeat(300),
+        channel: 'sms',
+        recipient: '+56912345678',
+      }).expect(201);
+
+      expect(response.body.content).toHaveLength(300);
+      expect(response.body.deliveries[0]).toMatchObject({
+        channel: 'sms',
+        recipient: '+56912345678',
+        status: 'sent',
+        details: {
+          to: '+56912345678',
+          text: `Code: ${'x'.repeat(154)}`,
+          truncated: true,
+          originalLength: 306,
+        },
+      });
+    });
+
+    it('formats the payload of a push notification', async () => {
+      const deviceToken =
+        'dQw4w9WgXcQ:APA91bHun4MxP5egoKMwt2KZFBaFUH-1RYqx_abc';
+
+      const response = await createNotification(carlaToken, {
+        title: 'New message',
+        content: 'You have one new message',
+        channel: 'push',
+        recipient: deviceToken,
+      }).expect(201);
+
+      expect(response.body.deliveries[0]).toMatchObject({
+        channel: 'push',
+        status: 'sent',
+        details: {
+          payload: {
+            token: deviceToken,
+            notification: {
+              title: 'New message',
+              body: 'You have one new message',
+            },
+          },
+        },
+      });
+    });
+
+    it('rejects an unknown channel, naming the available ones, and saves nothing', async () => {
+      const before = await totalOf(carlaToken);
+
+      const response = await createNotification(carlaToken, {
+        channel: 'fax',
+      }).expect(400);
+
+      expect(response.body.message).toEqual([
+        'channel must be one of: email, sms, push',
+      ]);
+      expect(await totalOf(carlaToken)).toBe(before);
+    });
+
+    it.each([
+      ['email', 'not-an-email'],
+      ['sms', 'someone@example.com'],
+      ['push', 'too-short'],
+    ])(
+      'rejects a recipient the %s channel does not accept and saves nothing',
+      async (channel, recipient) => {
+        const before = await totalOf(carlaToken);
+
+        await createNotification(carlaToken, { channel, recipient }).expect(
+          400,
+        );
+
+        expect(await totalOf(carlaToken)).toBe(before);
+      },
+    );
+  });
+
   describe('GET /notifications', () => {
     it('returns only the notifications of the caller, newest first', async () => {
       await createNotification(anaToken, { title: 'Third' }).expect(201);
@@ -131,6 +234,15 @@ describe('Notifications (e2e)', () => {
       expect(
         benList.body.items.map((item: { title: string }) => item.title),
       ).toEqual(['From Ben']);
+    });
+
+    it('includes the deliveries of each notification', async () => {
+      const response = await listNotifications(anaToken).expect(200);
+
+      for (const item of response.body.items) {
+        expect(item.deliveries).toHaveLength(1);
+        expect(item.deliveries[0].status).toBe('sent');
+      }
     });
 
     it('paginates', async () => {
@@ -194,6 +306,31 @@ describe('Notifications (e2e)', () => {
       );
       expect(titles).toContain('Owned by Ana');
       expect(titles).not.toContain('Hijacked');
+    });
+
+    it('rejects a change that leaves the recipient invalid for the channel', async () => {
+      const created = await createNotification(anaToken).expect(201);
+
+      const response = await patch(anaToken, created.body.id, {
+        channel: 'sms',
+      }).expect(400);
+
+      expect(response.body.message).toHaveLength(1);
+    });
+
+    it('accepts a change of channel with a matching recipient, without sending again', async () => {
+      const created = await createNotification(anaToken).expect(201);
+
+      const response = await patch(anaToken, created.body.id, {
+        channel: 'sms',
+        recipient: '+56912345678',
+      }).expect(200);
+
+      expect(response.body).toMatchObject({
+        channel: 'sms',
+        recipient: '+56912345678',
+      });
+      expect(response.body.deliveries).toEqual(created.body.deliveries);
     });
 
     it('answers 404 for an id that does not exist', async () => {

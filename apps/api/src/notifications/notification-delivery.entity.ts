@@ -7,6 +7,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  type Relation,
 } from 'typeorm';
 import { Notification } from './notification.entity.js';
 
@@ -26,9 +27,11 @@ export class NotificationDelivery {
   @Column({ name: 'notification_id', type: 'uuid' })
   notificationId: string;
 
-  @ManyToOne(() => Notification, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Notification, (notification) => notification.deliveries, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'notification_id' })
-  notification: Notification;
+  notification: Relation<Notification>;
 
   @Column({ type: 'varchar', length: 32 })
   channel: string;

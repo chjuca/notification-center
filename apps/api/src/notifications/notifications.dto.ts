@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import type {
+  DeliveryStatus,
+  NotificationDelivery,
+} from './notification-delivery.entity.js';
 import type { Notification } from './notification.entity.js';
 
 export const createNotificationSchema = z.object({
@@ -29,6 +33,16 @@ export type ListNotificationsQuery = z.infer<
   typeof listNotificationsQuerySchema
 >;
 
+export interface DeliveryResponse {
+  id: string;
+  channel: string;
+  recipient: string;
+  status: DeliveryStatus;
+  details: Record<string, unknown>;
+  error: string | null;
+  createdAt: Date;
+}
+
 export interface NotificationResponse {
   id: string;
   title: string;
@@ -37,6 +51,7 @@ export interface NotificationResponse {
   recipient: string;
   createdAt: Date;
   updatedAt: Date;
+  deliveries: DeliveryResponse[];
 }
 
 export interface PaginatedNotifications {
@@ -44,6 +59,18 @@ export interface PaginatedNotifications {
   total: number;
   page: number;
   limit: number;
+}
+
+function toDeliveryResponse(delivery: NotificationDelivery): DeliveryResponse {
+  return {
+    id: delivery.id,
+    channel: delivery.channel,
+    recipient: delivery.recipient,
+    status: delivery.status,
+    details: delivery.details,
+    error: delivery.error,
+    createdAt: delivery.createdAt,
+  };
 }
 
 export function toNotificationResponse(
@@ -57,5 +84,6 @@ export function toNotificationResponse(
     recipient: notification.recipient,
     createdAt: notification.createdAt,
     updatedAt: notification.updatedAt,
+    deliveries: notification.deliveries.map(toDeliveryResponse),
   };
 }
