@@ -5,9 +5,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { ApiErrorResponse } from '../common/api-error-response.js';
-import { AUTH_THROTTLE } from '../common/throttle.js';
+import { AUTH_RATE_LIMIT, RateLimit } from '../common/rate-limit.js';
 import {
   accessTokenSchema,
   loginSchema,
@@ -23,7 +22,7 @@ import { Public } from './public.decorator.js';
 
 @ApiTags('auth')
 @ApiErrorResponse(429, 'Too many attempts. Try again in a minute')
-@Throttle({ default: AUTH_THROTTLE })
+@RateLimit(AUTH_RATE_LIMIT)
 @Public()
 @Controller('auth')
 export class AuthController {

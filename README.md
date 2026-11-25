@@ -153,7 +153,7 @@ Con eso el canal ya se valida, se envía, queda registrado, aparece en `GET /cha
 
 **Seguridad**
 
-- **Límite de peticiones:** 5 por minuto en registro y login, 100 por minuto en el resto, por IP.
+- **Límite de peticiones:** 5 por minuto en registro y login, 100 por minuto en el resto, por IP. Es un guard propio con un contador en memoria.
 - **Cabeceras de seguridad** en todas las respuestas, y **CORS** restringido a los orígenes configurados.
 - **Dependencias sin telemetría:** se quitó la que traía el generador de NestJS.
 

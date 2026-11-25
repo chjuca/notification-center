@@ -4,7 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource, Like } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
-import { AUTH_THROTTLE } from '../src/common/throttle.js';
+import { AUTH_RATE_LIMIT } from '../src/common/rate-limit.js';
 import { User } from '../src/users/user.entity.js';
 
 const EMAIL_PREFIX = 'e2e-throttling-';
@@ -47,17 +47,17 @@ describe('Rate limiting (e2e)', () => {
     const first = await login().expect(200);
     const token = first.body.accessToken as string;
     expect(first.headers['x-ratelimit-limit']).toBe(
-      String(AUTH_THROTTLE.limit),
+      String(AUTH_RATE_LIMIT.limit),
     );
 
-    for (let attempt = 2; attempt <= AUTH_THROTTLE.limit; attempt++) {
+    for (let attempt = 2; attempt <= AUTH_RATE_LIMIT.limit; attempt++) {
       await login('wrong-password').expect(401);
     }
 
     const blocked = await login().expect(429);
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
 
-    for (let call = 0; call <= AUTH_THROTTLE.limit; call++) {
+    for (let call = 0; call <= AUTH_RATE_LIMIT.limit; call++) {
       await request(app.getHttpServer())
         .get('/notifications')
         .set('Authorization', `Bearer ${token}`)
