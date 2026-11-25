@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "@/lib/api";
 import type { Credentials } from "@/lib/auth";
 
@@ -19,12 +19,14 @@ export function CredentialsForm({
   footer,
   onSubmit,
 }: CredentialsFormProps) {
+  const id = useId();
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
 
     setErrors([]);
     setPending(true);
@@ -33,6 +35,7 @@ export function CredentialsForm({
         email: String(form.get("email")),
         password: String(form.get("password")),
       });
+      formElement.reset();
     } catch (error) {
       setErrors(
         error instanceof ApiError ? error.messages : ["Error inesperado"],
@@ -48,11 +51,11 @@ export function CredentialsForm({
 
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
-          <label htmlFor="email" className="form-label">
+          <label htmlFor={`${id}-email`} className="form-label">
             Email
           </label>
           <input
-            id="email"
+            id={`${id}-email`}
             name="email"
             type="email"
             className="form-control"
@@ -62,11 +65,11 @@ export function CredentialsForm({
         </div>
 
         <div className="mb-3">
-          <label htmlFor="password" className="form-label">
+          <label htmlFor={`${id}-password`} className="form-label">
             Contraseña
           </label>
           <input
-            id="password"
+            id={`${id}-password`}
             name="password"
             type="password"
             className="form-control"
